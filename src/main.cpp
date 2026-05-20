@@ -1,121 +1,249 @@
+// main.cpp
 #include <QApplication>
-#include <QFileDialog>
-#include <QFile>
 #include <QMainWindow>
-#include <QMenuBar>
-#include <QMessageBox>
 #include <QTextEdit>
+#include <QMenuBar>
+#include <QFileDialog>
+#include <QMessageBox>
 #include <QTextStream>
+#include <QFile>
+#include <QStatusBar>
+#include <QCloseEvent>
+#include <QStandardPaths>
+#include <QDir>
 
-class TextEditor : public QMainWindow {
+class EditorWindow : public QMainWindow
+{
+    Q_OBJECT
+
 public:
-    TextEditor() {
+    EditorWindow()
+    {
         textEdit = new QTextEdit(this);
+
+        // 日本語入力(IME)
+        textEdit->setAttribute(Qt::WA_InputMethodEnabled, true);
+
         setCentralWidget(textEdit);
 
         createMenus();
 
-        //setWindowTitle("Simple Qt Text Editor");
-        setWindowTitle("Kijitabu");
         resize(800, 600);
+        setWindowTitle("Qt 日本語テキストエディタ");
+
+        loadAutoSave();
+
+        statusBar()->showMessage("準備完了");
+    }
+
+protected:
+    void closeEvent(QCloseEvent *event) override
+    {
+        autoSave();
+        event->accept();
     }
 
 private:
     QTextEdit *textEdit;
     QString currentFile;
 
-    void createMenus() {
-        QMenu *fileMenu = menuBar()->addMenu("ファイル");
+    QString autoSavePath()
+    {
+        QString dir =
+            QStandardPaths::writableLocation(
+                QStandardPaths::AppDataLocation);
 
-        QAction *newAction = fileMenu->addAction("新規");
-        QAction *openAction = fileMenu->addAction("開く");
-        QAction *saveAction = fileMenu->addAction("保存");
-        QAction *saveAsAction = fileMenu->addAction("名前を付けて保存");
-        fileMenu->addSeparator();
-        QAction *exitAction = fileMenu->addAction("終了");
+        QDir().mkpath(dir);
 
-        connect(newAction, &QAction::triggered, this, [this]() {
-            textEdit->clear();
-            currentFile.clear();
-            setWindowTitle("Kijitabu");
-        });
-
-        connect(openAction, &QAction::triggered, this, [this]() {
-            QString fileName = QFileDialog::getOpenFileName(
-                this,
-                "ファイルを開く"
-            );
-
-            if (fileName.isEmpty()) {
-                return;
-            }
-
-            QFile file(fileName);
-
-            if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                QMessageBox::warning(this, "エラー", "ファイルを開けませんでした");
-                return;
-            }
-
-            QTextStream in(&file);
-            textEdit->setPlainText(in.readAll());
-
-            currentFile = fileName;
-            setWindowTitle(currentFile);
-        });
-
-        connect(saveAction, &QAction::triggered, this, [this]() {
-            saveFile();
-        });
-
-        connect(saveAsAction, &QAction::triggered, this, [this]() {
-            saveFileAs();
-        });
-
-        connect(exitAction, &QAction::triggered, this, &QWidget::close);
+        return dir + "/autosave.txt";
     }
 
-    bool saveFile() {
-        if (currentFile.isEmpty()) {
-            return saveFileAs();
-        }
+    void createMenus()
+    {
+        auto *fileMenu = menuBar()->addMenu("ファイル");
 
-        QFile file(currentFile);
+        auto *newAction  = fileMenu->addAction("新規");
+        auto *openAction = fileMenu->addAction("開く");
+        auto *saveAction = fileMenu->addAction("保存");
+        auto *saveAsAction = fileMenu->addAction("名前を付けて保存");
+        auto *exitAction = fileMenu->addAction("終了");
 
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QMessageBox::warning(this, "エラー", "ファイルを保存できませんでした");
+        connect(newAction, &QAction::triggered,
+                this, &EditorWindow::newFile);
+
+        connect(openAction, &QAction::triggered,
+                this, &EditorWindow::openFile);
+
+        connect(saveAction, &QAction::triggered,
+                this, &EditorWindow::saveFile);
+
+        connect(saveAsAction, &QAction::triggered,
+                this, &EditorWindow::saveFileAs);
+
+        connect(exitAction, &QAction::triggered,
+                this, &QWidget::close);
+    }
+
+    void newFile()
+    {
+        currentFile.clear();
+        textEdit->clear();
+
+        statusBar()->showMessage("新規ファイル");
+    }
+
+    void openFile()
+    {
+        QString fileName = QFileDialog::getOpenFileName(
+            this,
+            "ファイルを開く"
+        );
+
+        if (fileName.isEmpty())
+            return;
+
+        loadFromFile(fileName);
+    }
+
+    bool loadFromFile(const QString &fileName)
+    {
+        QFile file(fileName);
+
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            QMessageBox::warning(this,
+                                 "エラー",
+                                 "ファイルを開けません");
             return false;
         }
 
-        QTextStream out(&file);
-        out << textEdit->toPlainText();
+        QTextStream in(&file);
+
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+        in.setCodec("UTF-8");
+#else
+        in.setEncoding(QStringConverter::Utf8);
+#endif
+
+        textEdit->setPlainText(in.readAll());
+
+        currentFile = fileName;
+
+        statusBar()->showMessage("読み込み完了");
 
         return true;
     }
 
-    bool saveFileAs() {
-        QString fileName = QFileDialog::getSaveFileName(
-            this,
-            "名前を付けて保存"
-        );
+    bool saveToFile(const QString &fileName)
+    {
+        QFile file(fileName);
 
-        if (fileName.isEmpty()) {
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            QMessageBox::warning(this,
+                                 "エラー",
+                                 "保存できません");
             return false;
         }
 
-        currentFile = fileName;
-        setWindowTitle(currentFile);
+        QTextStream out(&file);
 
-        return saveFile();
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+        out.setCodec("UTF-8");
+#else
+        out.setEncoding(QStringConverter::Utf8);
+#endif
+
+        out << textEdit->toPlainText();
+
+        currentFile = fileName;
+
+        statusBar()->showMessage("保存完了");
+
+        return true;
+    }
+
+    void saveFile()
+    {
+        if (currentFile.isEmpty())
+        {
+            saveFileAs();
+            return;
+        }
+
+        saveToFile(currentFile);
+    }
+
+    void saveFileAs()
+    {
+        QString fileName = QFileDialog::getSaveFileName(
+            this,
+            "ファイルを保存"
+        );
+
+        if (fileName.isEmpty())
+            return;
+
+        saveToFile(fileName);
+    }
+
+    // 自動保存
+    void autoSave()
+    {
+        QFile file(autoSavePath());
+
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+            return;
+
+        QTextStream out(&file);
+
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+        out.setCodec("UTF-8");
+#else
+        out.setEncoding(QStringConverter::Utf8);
+#endif
+
+        out << textEdit->toPlainText();
+    }
+
+    // 起動時復元
+    void loadAutoSave()
+    {
+        QFile file(autoSavePath());
+
+        if (!file.exists())
+            return;
+
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            return;
+
+        QTextStream in(&file);
+
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+        in.setCodec("UTF-8");
+#else
+        in.setEncoding(QStringConverter::Utf8);
+#endif
+
+        textEdit->setPlainText(in.readAll());
+
+        statusBar()->showMessage("前回の内容を復元しました");
     }
 };
 
-int main(int argc, char *argv[]) {
+#include "main.moc"
+
+int main(int argc, char *argv[])
+{
     QApplication app(argc, argv);
 
-    TextEditor editor;
-    editor.show();
+    //QApplication::setApplicationName("QtEditor");
+    //QApplication::setOrganizationName("Local");
+    QApplication::setApplicationName("kijitabu");
+    QApplication::setOrganizationName("Local");
+
+    EditorWindow window;
+    window.show();
 
     return app.exec();
 }
-
