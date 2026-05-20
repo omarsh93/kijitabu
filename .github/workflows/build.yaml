@@ -1,0 +1,26 @@
+name: Build and Update README
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 0 * * *' # 毎日自動ビルドする場合
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+      - name: Build README
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          make
+
