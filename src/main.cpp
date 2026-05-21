@@ -288,7 +288,8 @@ int main(int argc, char *argv[])
     //QApplication::setApplicationName("QtEditor");
     //QApplication::setOrganizationName("Local");
     QApplication::setApplicationName("kijitabu");
-    QApplication::setOrganizationName("Local");
+    //QApplication::setOrganizationName("kijitabu");
+    QApplication::setOrganizationName("");
 
     EditorWindow window;
     window.show();

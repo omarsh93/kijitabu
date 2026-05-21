@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Kijitabu（メモ帳）
+Comment=メモ帳
+Exec=/home/tomo/bin/kijitabu
+Icon=kijitabu
+Terminal=false
+Categories=Utility;
