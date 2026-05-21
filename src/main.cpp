@@ -11,6 +11,8 @@
 #include <QCloseEvent>
 #include <QStandardPaths>
 #include <QDir>
+// 追加ヘッダ
+#include <QSettings>
 
 class EditorWindow : public QMainWindow
 {
@@ -31,7 +33,8 @@ public:
         resize(800, 600);
         setWindowTitle("Kijitabu");
 
-        loadAutoSave();
+        //loadAutoSave();
+        restoreLastSession();
 
         statusBar()->showMessage("準備完了");
     }
@@ -46,6 +49,27 @@ protected:
 private:
     QTextEdit *textEdit;
     QString currentFile;
+    QSettings settings {"Local", "QtEditor"};
+
+    void restoreLastSession()
+    {
+        QString lastFile =
+            settings.value("lastFile").toString();
+
+        // 最後に開いていたファイルを復元
+        if (!lastFile.isEmpty() && QFile::exists(lastFile))
+        {
+            if (loadFromFile(lastFile))
+            {
+                statusBar()->showMessage(
+                    "前回のファイルを復元しました");
+                return;
+            }
+        }
+
+        // ファイルが無ければautosave復元
+        loadAutoSave();
+    }
 
     QString autoSavePath()
     {
@@ -88,6 +112,7 @@ private:
     {
         currentFile.clear();
         textEdit->clear();
+        settings.remove("lastFile");
 
         statusBar()->showMessage("新規ファイル");
     }
@@ -128,6 +153,7 @@ private:
         textEdit->setPlainText(in.readAll());
 
         currentFile = fileName;
+        settings.setValue("lastFile", fileName);
 
         statusBar()->showMessage("読み込み完了");
 
@@ -157,6 +183,7 @@ private:
         out << textEdit->toPlainText();
 
         currentFile = fileName;
+        settings.setValue("lastFile", fileName);
 
         statusBar()->showMessage("保存完了");
 
