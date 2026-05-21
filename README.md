@@ -1,6 +1,6 @@
 ![logo](images/logo.png)
 # Kijitabu
-Kijitabuは軽量メモ帳アプリです。
+Kijitabuは![Qtライブラリ](https://www.qt.io/)を使用した軽量メモ帳アプリです。
 
 # 開発環境構築手順
 1. sudo apt install qt6-base-dev
