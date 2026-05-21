@@ -29,7 +29,7 @@ public:
         createMenus();
 
         resize(800, 600);
-        setWindowTitle("Qt 日本語テキストエディタ");
+        setWindowTitle("Kijitabu");
 
         loadAutoSave();
 
