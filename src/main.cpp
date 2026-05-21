@@ -13,6 +13,7 @@
 #include <QDir>
 // 追加ヘッダ
 #include <QSettings>
+#include <QFileInfo>
 
 class EditorWindow : public QMainWindow
 {
@@ -31,7 +32,8 @@ public:
         createMenus();
 
         resize(800, 600);
-        setWindowTitle("Kijitabu");
+        //setWindowTitle("Kijitabu");
+        updateWindowTitle();
 
         //loadAutoSave();
         restoreLastSession();
@@ -49,7 +51,23 @@ protected:
 private:
     QTextEdit *textEdit;
     QString currentFile;
-    QSettings settings {"Local", "QtEditor"};
+    QSettings settings {"kijitabu", "kijitabu"};
+
+    void updateWindowTitle()
+    {
+        QString name;
+
+        if (currentFile.isEmpty())
+        {
+            name = "無題";
+        }
+        else
+        {
+            name = QFileInfo(currentFile).fileName();
+        }
+
+        setWindowTitle(name + " - Kijitabu");
+    }
 
     void restoreLastSession()
     {
@@ -115,6 +133,7 @@ private:
         settings.remove("lastFile");
 
         statusBar()->showMessage("新規ファイル");
+        updateWindowTitle();
     }
 
     void openFile()
@@ -153,6 +172,7 @@ private:
         textEdit->setPlainText(in.readAll());
 
         currentFile = fileName;
+        updateWindowTitle();
         settings.setValue("lastFile", fileName);
 
         statusBar()->showMessage("読み込み完了");
@@ -183,6 +203,7 @@ private:
         out << textEdit->toPlainText();
 
         currentFile = fileName;
+        updateWindowTitle();
         settings.setValue("lastFile", fileName);
 
         statusBar()->showMessage("保存完了");
