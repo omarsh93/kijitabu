@@ -17,6 +17,8 @@
 #include <QPlainTextEdit>
 #include <QPainter>
 #include <QTextBlock>
+#include <QShortcut>
+#include <QKeySequence>
 
 
 
@@ -79,6 +81,7 @@ public:
         }
 
         int space = 3 + fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits;
+        space += 10;
 
         return space;
     }
@@ -316,6 +319,21 @@ private:
 
         connect(exitAction, &QAction::triggered,
                 this, &QWidget::close);
+
+        // Ctrl+N 新規
+        newAction->setShortcut(QKeySequence::New);
+
+        // Ctrl+O 開く
+        openAction->setShortcut(QKeySequence::Open);
+
+        // Ctrl+S 保存
+        saveAction->setShortcut(QKeySequence::Save);
+
+        // Ctrl+Shift+S 名前を付けて保存
+        saveAsAction->setShortcut(QKeySequence::SaveAs);
+
+        // Ctrl+Q 終了
+        exitAction->setShortcut(QKeySequence::Quit);
     }
 
     void newFile()
