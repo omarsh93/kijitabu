@@ -10,6 +10,9 @@ qt_standard_project_setup()
 
 qt_add_executable(kijitabu
     src/main.cpp
+    src/EditorWindow.cpp
+    src/CodeEditor.cpp
+    src/LineNumberArea.cpp
 )
 
 target_link_libraries(kijitabu PRIVATE Qt6::Widgets)

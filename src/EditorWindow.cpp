@@ -11,6 +11,7 @@
 #include <QStandardPaths>
 #include <QDir>
 #include <QFileInfo>
+#include <QFontDialog>
 
 EditorWindow::EditorWindow()
 {
@@ -23,6 +24,14 @@ EditorWindow::EditorWindow()
     createMenus();
 
     resize(800, 600);
+
+    QString fontStr = settings.value("font").toString();
+    if (!fontStr.isEmpty())
+    {
+        QFont savedFont;
+        savedFont.fromString(fontStr);
+        applyFont(savedFont);
+    }
 
     updateWindowTitle();
 
@@ -56,21 +65,7 @@ void EditorWindow::updateWindowTitle()
 
     void EditorWindow::restoreLastSession()
     {
-        QString lastFile =
-            settings.value("lastFile").toString();
-
-        // 最後に開いていたファイルを復元
-        if (!lastFile.isEmpty() && QFile::exists(lastFile))
-        {
-            if (loadFromFile(lastFile))
-            {
-                statusBar()->showMessage(
-                    "前回のファイルを復元しました");
-                return;
-            }
-        }
-
-        // ファイルが無ければautosave復元
+        // autosaveを復元（閉じる時に常にautosaveしている）
         loadAutoSave();
     }
 
@@ -124,6 +119,13 @@ void EditorWindow::createMenus()
 
         // Ctrl+Q 終了
         exitAction->setShortcut(QKeySequence::Quit);
+
+        auto *viewMenu = menuBar()->addMenu("表示");
+
+        auto *fontAction = viewMenu->addAction("フォント...");
+
+        connect(fontAction, &QAction::triggered,
+                this, &EditorWindow::selectFont);
     }
 
     void EditorWindow::newFile()
@@ -233,6 +235,25 @@ void EditorWindow::createMenus()
             return;
 
         saveToFile(fileName);
+    }
+
+    void EditorWindow::selectFont()
+    {
+        bool ok;
+        QFont font = QFontDialog::getFont(
+            &ok, textEdit->font(), this, "フォントを選択");
+
+        if (ok)
+        {
+            applyFont(font);
+            settings.setValue("font", font.toString());
+        }
+    }
+
+    void EditorWindow::applyFont(const QFont &font)
+    {
+        textEdit->setFont(font);
+        static_cast<CodeEditor*>(textEdit)->updateLineNumberAreaWidth(0);
     }
 
     // 自動保存

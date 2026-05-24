@@ -3,6 +3,8 @@
 
 #include <QPainter>
 #include <QTextBlock>
+#include <QPainter>
+#include <QPaintEvent>
 
 CodeEditor::CodeEditor(QWidget *parent)
     : QPlainTextEdit(parent)
@@ -18,9 +20,64 @@ CodeEditor::CodeEditor(QWidget *parent)
     connect(this, &CodeEditor::cursorPositionChanged,
             this, &CodeEditor::highlightCurrentLine);
 
+    //setOverwriteMode(true);
+    
+    
+   
+    
+    
+    // 追加
+    //setCursorWidth(4);
+    setCursorWidth(0);
+
     updateLineNumberAreaWidth(0);
     highlightCurrentLine();
 }
+
+void CodeEditor::paintEvent(QPaintEvent *event)
+{
+    // 通常描画
+    QPlainTextEdit::paintEvent(event);
+
+    QPainter painter(viewport());
+
+    QTextCursor cursor = textCursor();
+
+    QRect rect = cursorRect(cursor);
+
+    // カーソル幅（カーソル位置の文字の実際の幅に合わせる）
+    QString ch = cursor.block().text().mid(
+        cursor.positionInBlock(), 1);
+    int w = ch.isEmpty()
+        ? fontMetrics().horizontalAdvance('M')
+        : fontMetrics().horizontalAdvance(ch);
+    rect.setWidth(w);
+
+    // 半透明水色
+    QColor cursorColor(0, 255, 255, 120);
+
+    painter.fillRect(rect, cursorColor);
+
+    /*
+    // 文字を再描画
+    QString ch = cursor.block().text().mid(
+        cursor.positionInBlock(),
+        1
+    );
+
+    if (!ch.isEmpty())
+    {
+        painter.setPen(Qt::black);
+
+        painter.drawText(
+            rect,
+            Qt::AlignCenter,
+            ch
+        );
+    }
+    */
+}
+
 
 int CodeEditor::lineNumberAreaWidth()
 {
@@ -127,7 +184,24 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
             QString number =
                 QString::number(blockNumber + 1);
 
-            painter.setPen(Qt::black);
+            //painter.setPen(Qt::black);
+            
+            if (blockNumber == textCursor().blockNumber())
+            {
+                QFont bold = painter.font();
+                bold.setBold(true);
+                painter.setFont(bold);
+
+                painter.setPen(Qt::yellow);
+            }
+            else
+            {
+                QFont normal = painter.font();
+                normal.setBold(false);
+                painter.setFont(normal);
+
+                painter.setPen(Qt::black);
+            }
 
             painter.drawText(
                 0,

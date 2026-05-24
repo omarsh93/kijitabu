@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QSettings>
+#include <QFont>
 
 class QPlainTextEdit;
 
@@ -27,6 +28,8 @@ private:
 
     void updateWindowTitle();
 
+    void applyFont(const QFont &font);
+
     void restoreLastSession();
 
     QString autoSavePath();
@@ -47,6 +50,8 @@ private slots:
     void saveFile();
 
     void saveFileAs();
+
+    void selectFont();
 };
 
 #endif

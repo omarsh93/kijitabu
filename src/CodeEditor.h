@@ -18,9 +18,12 @@ public:
 
 protected:
     void resizeEvent(QResizeEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+
+public slots:
+    void updateLineNumberAreaWidth(int);
 
 private slots:
-    void updateLineNumberAreaWidth(int);
     void updateLineNumberArea(const QRect &rect, int dy);
     void highlightCurrentLine();
 
