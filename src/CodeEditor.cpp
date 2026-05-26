@@ -3,7 +3,6 @@
 
 #include <QPainter>
 #include <QTextBlock>
-#include <QPainter>
 #include <QPaintEvent>
 
 CodeEditor::CodeEditor(QWidget *parent)
@@ -20,14 +19,6 @@ CodeEditor::CodeEditor(QWidget *parent)
     connect(this, &CodeEditor::cursorPositionChanged,
             this, &CodeEditor::highlightCurrentLine);
 
-    //setOverwriteMode(true);
-    
-    
-   
-    
-    
-    // 追加
-    //setCursorWidth(4);
     setCursorWidth(0);
 
     updateLineNumberAreaWidth(0);
@@ -36,46 +27,25 @@ CodeEditor::CodeEditor(QWidget *parent)
 
 void CodeEditor::paintEvent(QPaintEvent *event)
 {
-    // 通常描画
     QPlainTextEdit::paintEvent(event);
 
     QPainter painter(viewport());
+    painter.setClipRect(event->rect());
 
+    // 現在行のハイライト（半透明なので選択範囲が見える）
     QTextCursor cursor = textCursor();
+    QRect lineRect = cursorRect(cursor);
+    lineRect.setLeft(0);
+    lineRect.setRight(viewport()->width());
+    painter.fillRect(lineRect, QColor(105, 105, 105, 60));
 
-    QRect rect = cursorRect(cursor);
-
-    // カーソル幅（カーソル位置の文字の実際の幅に合わせる）
-    QString ch = cursor.block().text().mid(
-        cursor.positionInBlock(), 1);
-    int w = ch.isEmpty()
-        ? fontMetrics().horizontalAdvance('M')
-        : fontMetrics().horizontalAdvance(ch);
-    rect.setWidth(w);
-
-    // 半透明水色
-    QColor cursorColor(0, 255, 255, 120);
-
-    painter.fillRect(rect, cursorColor);
-
-    /*
-    // 文字を再描画
-    QString ch = cursor.block().text().mid(
-        cursor.positionInBlock(),
-        1
-    );
-
-    if (!ch.isEmpty())
+    // カーソル（赤い棒）
+    if (!isReadOnly())
     {
-        painter.setPen(Qt::black);
-
-        painter.drawText(
-            rect,
-            Qt::AlignCenter,
-            ch
-        );
+        QRect cursorR = cursorRect(cursor);
+        cursorR.setWidth(3);
+        painter.fillRect(cursorR, QColor(255, 80, 80));
     }
-    */
 }
 
 
@@ -139,24 +109,7 @@ void CodeEditor::resizeEvent(QResizeEvent *event)
 
 void CodeEditor::highlightCurrentLine()
 {
-    QList<QTextEdit::ExtraSelection> extraSelections;
-
-    QTextEdit::ExtraSelection selection;
-
-    QColor lineColor = QColor(Qt::darkGray);
-
-    selection.format.setBackground(lineColor);
-
-    selection.format.setProperty(
-        QTextFormat::FullWidthSelection,
-        true);
-
-    selection.cursor = textCursor();
-    selection.cursor.clearSelection();
-
-    extraSelections.append(selection);
-
-    setExtraSelections(extraSelections);
+    viewport()->update();
 }
 
 void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
