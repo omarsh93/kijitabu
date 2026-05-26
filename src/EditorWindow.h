@@ -52,6 +52,9 @@ private slots:
     void saveFileAs();
 
     void selectFont();
+
+public slots:
+    void bringToFront();
 };
 
 #endif

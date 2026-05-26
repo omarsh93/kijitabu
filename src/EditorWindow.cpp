@@ -1,6 +1,8 @@
 #include "EditorWindow.h"
 #include "CodeEditor.h"
 
+#include <QApplication>
+#include <QWindow>
 #include <QMenuBar>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -297,4 +299,14 @@ void EditorWindow::createMenus()
         textEdit->setPlainText(in.readAll());
 
         statusBar()->showMessage("前回の内容を復元しました");
+    }
+
+    void EditorWindow::bringToFront()
+    {
+        showNormal();
+        raise();
+        activateWindow();
+        if (auto *win = windowHandle())
+            win->requestActivate();
+        QApplication::alert(this, 3000);
     }
