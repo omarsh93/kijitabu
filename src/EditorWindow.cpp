@@ -65,11 +65,28 @@ void EditorWindow::updateWindowTitle()
     setWindowTitle(name + " - Kijitabu");
 }
 
-    void EditorWindow::restoreLastSession()
+void EditorWindow::restoreLastSession()
+{
+    // 前回開いていたファイルを復元
+    QString lastFile = settings.value("lastFile").toString();
+    if (!lastFile.isEmpty())
     {
-        // autosaveを復元（閉じる時に常にautosaveしている）
-        loadAutoSave();
+        loadFromFile(lastFile);
     }
+
+    // autosaveを復元（閉じる時に常にautosaveしている）
+    loadAutoSave();
+
+    // カーソル位置を復元
+    int cursorPos = settings.value("cursorPosition", 0).toInt();
+    if (cursorPos > 0)
+    {
+        QTextCursor cursor = textEdit->textCursor();
+        cursor.setPosition(qMin(cursorPos, textEdit->document()->characterCount() - 1));
+        textEdit->setTextCursor(cursor);
+        textEdit->ensureCursorVisible();
+    }
+}
 
 QString EditorWindow::autoSavePath()
 {
@@ -130,15 +147,16 @@ void EditorWindow::createMenus()
                 this, &EditorWindow::selectFont);
     }
 
-    void EditorWindow::newFile()
-    {
-        currentFile.clear();
-        textEdit->clear();
-        settings.remove("lastFile");
+void EditorWindow::newFile()
+{
+    currentFile.clear();
+    textEdit->clear();
+    settings.remove("lastFile");
+    settings.remove("cursorPosition");
 
-        statusBar()->showMessage("新規ファイル");
-        updateWindowTitle();
-    }
+    statusBar()->showMessage("新規ファイル");
+    updateWindowTitle();
+}
 
     void EditorWindow::openFile()
     {
@@ -258,24 +276,27 @@ void EditorWindow::createMenus()
         static_cast<CodeEditor*>(textEdit)->updateLineNumberAreaWidth(0);
     }
 
-    // 自動保存
-    void EditorWindow::autoSave()
-    {
-        QFile file(autoSavePath());
+// 自動保存
+void EditorWindow::autoSave()
+{
+    QFile file(autoSavePath());
 
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
-            return;
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        return;
 
-        QTextStream out(&file);
+    QTextStream out(&file);
 
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-        out.setCodec("UTF-8");
+    out.setCodec("UTF-8");
 #else
-        out.setEncoding(QStringConverter::Utf8);
+    out.setEncoding(QStringConverter::Utf8);
 #endif
 
-        out << textEdit->toPlainText();
-    }
+    out << textEdit->toPlainText();
+
+    // カーソル位置を保存
+    settings.setValue("cursorPosition", textEdit->textCursor().position());
+}
 
     // 起動時復元
     void EditorWindow::loadAutoSave()
