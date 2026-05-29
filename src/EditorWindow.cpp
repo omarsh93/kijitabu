@@ -15,6 +15,7 @@
 #include <QFileInfo>
 #include <QFontDialog>
 
+
 EditorWindow::EditorWindow()
 {
     textEdit = new CodeEditor(this);
@@ -24,6 +25,9 @@ EditorWindow::EditorWindow()
     setCentralWidget(textEdit);
 
     createMenus();
+
+    recentFiles = settings.value("recentFiles").toStringList();
+    updateRecentFilesMenu();
 
     resize(800, 600);
 
@@ -107,6 +111,11 @@ void EditorWindow::createMenus()
         auto *openAction = fileMenu->addAction("開く");
         auto *saveAction = fileMenu->addAction("保存");
         auto *saveAsAction = fileMenu->addAction("名前を付けて保存");
+
+        fileMenu->addSeparator();
+        recentFilesMenu = fileMenu->addMenu("最近のファイル");
+
+        fileMenu->addSeparator();
         auto *exitAction = fileMenu->addAction("終了");
 
         connect(newAction, &QAction::triggered,
@@ -147,12 +156,49 @@ void EditorWindow::createMenus()
                 this, &EditorWindow::selectFont);
     }
 
+void EditorWindow::addToRecentFiles(const QString &fileName)
+{
+    recentFiles.removeOne(fileName);
+    recentFiles.prepend(fileName);
+
+    while (recentFiles.size() > maxRecentFiles)
+        recentFiles.removeLast();
+
+    settings.setValue("recentFiles", recentFiles);
+    updateRecentFilesMenu();
+}
+
+void EditorWindow::updateRecentFilesMenu()
+{
+    recentFilesMenu->clear();
+
+    for (const auto &file : recentFiles)
+    {
+        if (file == untitledSentinel)
+        {
+            auto *action = recentFilesMenu->addAction("無題");
+            connect(action, &QAction::triggered, this, &EditorWindow::newFile);
+        }
+        else
+        {
+            auto *action = recentFilesMenu->addAction(file);
+            connect(action, &QAction::triggered, this, [this, file]() {
+                loadFromFile(file);
+            });
+        }
+    }
+
+    recentFilesMenu->setEnabled(!recentFiles.isEmpty());
+}
+
 void EditorWindow::newFile()
 {
     currentFile.clear();
     textEdit->clear();
     settings.remove("lastFile");
     settings.remove("cursorPosition");
+
+    addToRecentFiles(untitledSentinel);
 
     statusBar()->showMessage("新規ファイル");
     updateWindowTitle();
@@ -197,6 +243,8 @@ void EditorWindow::newFile()
         updateWindowTitle();
         settings.setValue("lastFile", fileName);
 
+        addToRecentFiles(fileName);
+
         statusBar()->showMessage("読み込み完了");
 
         return true;
@@ -227,6 +275,8 @@ void EditorWindow::newFile()
         currentFile = fileName;
         updateWindowTitle();
         settings.setValue("lastFile", fileName);
+
+        addToRecentFiles(fileName);
 
         statusBar()->showMessage("保存完了");
 

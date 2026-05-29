@@ -2,8 +2,10 @@
 #define EDITORWINDOW_H
 
 #include <QMainWindow>
+#include <QMenu>
 #include <QSettings>
 #include <QFont>
+#include <QStringList>
 
 class QPlainTextEdit;
 
@@ -22,9 +24,16 @@ private:
 
     QString currentFile;
 
+    QMenu *recentFilesMenu;
     QSettings settings {"kijitabu", "kijitabu"};
 
+    QStringList recentFiles;
+    static constexpr int maxRecentFiles = 10;
+    static constexpr const char *untitledSentinel = "__untitled__";
+
     void createMenus();
+    void updateRecentFilesMenu();
+    void addToRecentFiles(const QString &fileName);
 
     void updateWindowTitle();
 
