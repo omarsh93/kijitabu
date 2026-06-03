@@ -145,7 +145,7 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
                 bold.setBold(true);
                 painter.setFont(bold);
 
-                painter.setPen(Qt::yellow);
+                painter.setPen(QColor(60, 60, 60));
             }
             else
             {
