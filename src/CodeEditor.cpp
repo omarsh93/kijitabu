@@ -3,6 +3,7 @@
 
 #include <QPainter>
 #include <QTextBlock>
+#include <QTextDocument>
 #include <QPaintEvent>
 
 CodeEditor::CodeEditor(QWidget *parent)
@@ -174,4 +175,34 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
 
         ++blockNumber;
     }
+}
+
+void CodeEditor::setSearchHighlight(const QString &text,
+                                    QTextDocument::FindFlags flags)
+{
+    QList<QTextEdit::ExtraSelection> selections;
+
+    if (!text.isEmpty())
+    {
+        QTextCursor cursor(document());
+        while (!cursor.isNull() && !cursor.atEnd())
+        {
+            cursor = document()->find(text, cursor, flags);
+            if (!cursor.isNull())
+            {
+                QTextEdit::ExtraSelection sel;
+                sel.cursor = cursor;
+                //sel.format.setBackground(QColor(255, 255, 175));
+                sel.format.setBackground(QColor(255, 0, 0));
+                selections.append(sel);
+            }
+        }
+    }
+
+    setExtraSelections(selections);
+}
+
+void CodeEditor::clearSearchHighlight()
+{
+    setExtraSelections({});
 }

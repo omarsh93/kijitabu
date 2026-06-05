@@ -6,6 +6,13 @@
 #include <QSettings>
 #include <QFont>
 #include <QStringList>
+#include <QLineEdit>
+#include <QCheckBox>
+#include <QDialog>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QTextDocument>
 
 class QPlainTextEdit;
 
@@ -28,6 +35,8 @@ private:
     QSettings settings {"kijitabu", "kijitabu"};
 
     QStringList recentFiles;
+    QString lastSearch;
+    QTextDocument::FindFlags lastSearchFlags;
     static constexpr int maxRecentFiles = 10;
     static constexpr const char *untitledSentinel = "__untitled__";
 
@@ -61,6 +70,12 @@ private slots:
     void saveFileAs();
 
     void selectFont();
+
+    void showFindDialog();
+
+    void findNext();
+
+    void findPrevious();
 
 public slots:
     void bringToFront();

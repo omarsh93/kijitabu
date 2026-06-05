@@ -16,6 +16,10 @@ public:
 
     void lineNumberAreaPaintEvent(QPaintEvent *event);
 
+    void setSearchHighlight(const QString &text,
+                            QTextDocument::FindFlags flags = QTextDocument::FindFlags());
+    void clearSearchHighlight();
+
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;

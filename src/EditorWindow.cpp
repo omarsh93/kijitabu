@@ -154,6 +154,25 @@ void EditorWindow::createMenus()
 
         connect(fontAction, &QAction::triggered,
                 this, &EditorWindow::selectFont);
+
+        auto *editMenu = menuBar()->addMenu("編集");
+
+        auto *findAction = editMenu->addAction("検索...");
+        auto *findNextAction = editMenu->addAction("次を検索");
+        auto *findPrevAction = editMenu->addAction("前を検索");
+
+        connect(findAction, &QAction::triggered,
+                this, &EditorWindow::showFindDialog);
+
+        connect(findNextAction, &QAction::triggered,
+                this, &EditorWindow::findNext);
+
+        connect(findPrevAction, &QAction::triggered,
+                this, &EditorWindow::findPrevious);
+
+        findAction->setShortcut(QKeySequence::Find);
+        findNextAction->setShortcut(QKeySequence(Qt::Key_F3));
+        findPrevAction->setShortcut(QKeySequence(Qt::SHIFT | Qt::Key_F3));
     }
 
 void EditorWindow::addToRecentFiles(const QString &fileName)
@@ -195,6 +214,8 @@ void EditorWindow::newFile()
 {
     currentFile.clear();
     textEdit->clear();
+    lastSearch.clear();
+    static_cast<CodeEditor*>(textEdit)->clearSearchHighlight();
     settings.remove("lastFile");
     settings.remove("cursorPosition");
 
@@ -244,6 +265,9 @@ void EditorWindow::newFile()
         settings.setValue("lastFile", fileName);
 
         addToRecentFiles(fileName);
+
+        lastSearch.clear();
+        static_cast<CodeEditor*>(textEdit)->clearSearchHighlight();
 
         statusBar()->showMessage("読み込み完了");
 
@@ -370,6 +394,132 @@ void EditorWindow::autoSave()
         textEdit->setPlainText(in.readAll());
 
         statusBar()->showMessage("前回の内容を復元しました");
+    }
+
+    void EditorWindow::showFindDialog()
+    {
+        QDialog dialog(this);
+        dialog.setWindowTitle("検索");
+
+        auto *layout = new QVBoxLayout(&dialog);
+
+        auto *searchInput = new QLineEdit(&dialog);
+        searchInput->setPlaceholderText("検索する文字列");
+        if (!lastSearch.isEmpty())
+            searchInput->setText(lastSearch);
+        layout->addWidget(searchInput);
+
+        auto *caseCheck = new QCheckBox("大文字/小文字を区別", &dialog);
+        layout->addWidget(caseCheck);
+
+        auto *buttonLayout = new QHBoxLayout();
+        auto *findNextBtn = new QPushButton("次を検索", &dialog);
+        auto *findPrevBtn = new QPushButton("前を検索", &dialog);
+        auto *closeBtn = new QPushButton("閉じる", &dialog);
+        buttonLayout->addWidget(findNextBtn);
+        buttonLayout->addWidget(findPrevBtn);
+        buttonLayout->addWidget(closeBtn);
+        layout->addLayout(buttonLayout);
+
+        auto applyHighlight = [&]() {
+            auto *editor = static_cast<CodeEditor*>(textEdit);
+            editor->setSearchHighlight(lastSearch, lastSearchFlags);
+        };
+
+        auto doFind = [&](QTextDocument::FindFlags flags) {
+            QString text = searchInput->text();
+            if (text.isEmpty()) return;
+
+            lastSearch = text;
+            lastSearchFlags = {};
+            if (caseCheck->isChecked())
+                lastSearchFlags |= QTextDocument::FindCaseSensitively;
+            flags |= lastSearchFlags;
+
+            if (textEdit->find(text, flags))
+            {
+                applyHighlight();
+                return;
+            }
+
+            QTextCursor cursor(textEdit->document());
+            if (flags & QTextDocument::FindBackward)
+                cursor.movePosition(QTextCursor::End);
+            textEdit->setTextCursor(cursor);
+
+            if (textEdit->find(text, flags))
+            {
+                applyHighlight();
+                statusBar()->showMessage("検索文字列が見つかりました（先頭／末尾から続き）");
+            }
+            else
+            {
+                applyHighlight();
+                statusBar()->showMessage("見つかりませんでした");
+            }
+        };
+
+        connect(findNextBtn, &QPushButton::clicked, [&]() {
+            doFind(QTextDocument::FindFlags());
+        });
+
+        connect(findPrevBtn, &QPushButton::clicked, [&]() {
+            doFind(QTextDocument::FindBackward);
+        });
+
+        connect(closeBtn, &QPushButton::clicked, &dialog, &QDialog::close);
+
+        connect(searchInput, &QLineEdit::returnPressed, [&]() {
+            doFind(QTextDocument::FindFlags());
+        });
+
+        searchInput->selectAll();
+        searchInput->setFocus();
+        dialog.exec();
+    }
+
+    void EditorWindow::findNext()
+    {
+        if (lastSearch.isEmpty())
+        {
+            showFindDialog();
+            return;
+        }
+
+        if (textEdit->find(lastSearch, lastSearchFlags))
+            return;
+
+        QTextCursor cursor(textEdit->document());
+        cursor.movePosition(QTextCursor::Start);
+        textEdit->setTextCursor(cursor);
+
+        if (textEdit->find(lastSearch, lastSearchFlags))
+            statusBar()->showMessage("検索文字列が見つかりました（先頭から続き）");
+        else
+            statusBar()->showMessage("見つかりませんでした");
+    }
+
+    void EditorWindow::findPrevious()
+    {
+        if (lastSearch.isEmpty())
+        {
+            showFindDialog();
+            return;
+        }
+
+        QTextDocument::FindFlags flags = QTextDocument::FindBackward | lastSearchFlags;
+
+        if (textEdit->find(lastSearch, flags))
+            return;
+
+        QTextCursor cursor(textEdit->document());
+        cursor.movePosition(QTextCursor::End);
+        textEdit->setTextCursor(cursor);
+
+        if (textEdit->find(lastSearch, flags))
+            statusBar()->showMessage("検索文字列が見つかりました（末尾から続き）");
+        else
+            statusBar()->showMessage("見つかりませんでした");
     }
 
     void EditorWindow::bringToFront()
