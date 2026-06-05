@@ -22,6 +22,12 @@ CodeEditor::CodeEditor(QWidget *parent)
 
     setCursorWidth(0);
 
+    // 検索マッチ選択時も黄色で表示されるよう選択色を設定
+    QPalette p = palette();
+    p.setColor(QPalette::Highlight, QColor(255, 220, 0));
+    p.setColor(QPalette::HighlightedText, Qt::black);
+    setPalette(p);
+
     updateLineNumberAreaWidth(0);
     highlightCurrentLine();
 }
@@ -30,19 +36,12 @@ void CodeEditor::paintEvent(QPaintEvent *event)
 {
     QPlainTextEdit::paintEvent(event);
 
+    // カーソル（赤い棒）
     QPainter painter(viewport());
     painter.setClipRect(event->rect());
-
-    // 現在行のハイライト（半透明なので選択範囲が見える）
-    QTextCursor cursor = textCursor();
-    QRect lineRect = cursorRect(cursor);
-    lineRect.setLeft(0);
-    lineRect.setRight(viewport()->width());
-    painter.fillRect(lineRect, QColor(105, 105, 105, 60));
-
-    // カーソル（赤い棒）
     if (!isReadOnly())
     {
+        QTextCursor cursor = textCursor();
         QRect cursorR = cursorRect(cursor);
         cursorR.setWidth(3);
         painter.fillRect(cursorR, QColor(255, 80, 80));
@@ -110,7 +109,24 @@ void CodeEditor::resizeEvent(QResizeEvent *event)
 
 void CodeEditor::highlightCurrentLine()
 {
-    viewport()->update();
+    currentLineSelections.clear();
+
+    if (!isReadOnly())
+    {
+        QTextEdit::ExtraSelection selection;
+        selection.format.setBackground(QColor(105, 105, 105, 60));
+        selection.format.setProperty(QTextFormat::FullWidthSelection, true);
+        selection.cursor = textCursor();
+        selection.cursor.clearSelection();
+        currentLineSelections.append(selection);
+    }
+
+    mergeAndApplySelections();
+}
+
+void CodeEditor::mergeAndApplySelections()
+{
+    setExtraSelections(currentLineSelections + searchSelections);
 }
 
 void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
@@ -180,7 +196,7 @@ void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event)
 void CodeEditor::setSearchHighlight(const QString &text,
                                     QTextDocument::FindFlags flags)
 {
-    QList<QTextEdit::ExtraSelection> selections;
+    searchSelections.clear();
 
     if (!text.isEmpty())
     {
@@ -192,17 +208,17 @@ void CodeEditor::setSearchHighlight(const QString &text,
             {
                 QTextEdit::ExtraSelection sel;
                 sel.cursor = cursor;
-                //sel.format.setBackground(QColor(255, 255, 175));
-                sel.format.setBackground(QColor(255, 0, 0));
-                selections.append(sel);
+                sel.format.setBackground(QColor(255, 255, 0));
+                searchSelections.append(sel);
             }
         }
     }
 
-    setExtraSelections(selections);
+    mergeAndApplySelections();
 }
 
 void CodeEditor::clearSearchHighlight()
 {
-    setExtraSelections({});
+    searchSelections.clear();
+    mergeAndApplySelections();
 }

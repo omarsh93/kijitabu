@@ -33,6 +33,10 @@ private slots:
 
 private:
     QWidget *lineNumberArea;
+    QList<QTextEdit::ExtraSelection> currentLineSelections;
+    QList<QTextEdit::ExtraSelection> searchSelections;
+
+    void mergeAndApplySelections();
 };
 
 #endif
