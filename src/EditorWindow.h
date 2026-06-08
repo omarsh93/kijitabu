@@ -2,6 +2,8 @@
 #define EDITORWINDOW_H
 
 #include <QMainWindow>
+#include <QTabWidget>
+#include <QMap>
 #include <QMenu>
 #include <QSettings>
 #include <QFont>
@@ -15,6 +17,7 @@
 #include <QTextDocument>
 
 class QPlainTextEdit;
+class CodeEditor;
 
 class EditorWindow : public QMainWindow
 {
@@ -27,9 +30,8 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private:
-    QPlainTextEdit *textEdit;
-
-    QString currentFile;
+    QTabWidget *tabWidget;
+    QMap<QPlainTextEdit*, QString> tabFiles;
 
     QMenu *recentFilesMenu;
     QSettings settings {"kijitabu", "kijitabu"};
@@ -37,6 +39,7 @@ private:
     QStringList recentFiles;
     QString lastSearch;
     QTextDocument::FindFlags lastSearchFlags;
+    QFont currentFont;
     static constexpr int maxRecentFiles = 10;
     static constexpr const char *untitledSentinel = "__untitled__";
 
@@ -46,19 +49,23 @@ private:
 
     void updateWindowTitle();
 
-    void applyFont(const QFont &font);
+    void applyFontToEditor(CodeEditor *editor);
+    void applyFontToAllEditors();
 
     void restoreLastSession();
 
-    QString autoSavePath();
+    CodeEditor *currentEditor() const;
+    int addNewTab(const QString &title = QString());
+    void closeTab(int index);
+    bool maybeSaveTab(int index);
+    void updateTabTitle(int index);
 
+    void openFileAtPath(const QString &fileName);
     bool loadFromFile(const QString &fileName);
 
-    bool saveToFile(const QString &fileName);
+    bool saveToFile(const QString &fileName, CodeEditor *editor);
 
-    void autoSave();
-
-    void loadAutoSave();
+    void autoSaveAll();
 
 private slots:
     void newFile();
@@ -69,6 +76,8 @@ private slots:
 
     void saveFileAs();
 
+    void closeCurrentTab();
+
     void selectFont();
 
     void showFindDialog();
@@ -76,6 +85,10 @@ private slots:
     void findNext();
 
     void findPrevious();
+
+    void onTabCloseRequest(int index);
+
+    void onTabChanged(int index);
 
 public slots:
     void bringToFront();
