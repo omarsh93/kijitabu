@@ -151,15 +151,6 @@ void EditorWindow::updateWindowTitle()
 
 void EditorWindow::closeEvent(QCloseEvent *event)
 {
-    for (int i = 0; i < tabWidget->count(); ++i)
-    {
-        if (!maybeSaveTab(i))
-        {
-            event->ignore();
-            return;
-        }
-    }
-
     autoSaveAll();
     event->accept();
 }
@@ -562,7 +553,6 @@ void EditorWindow::closeCurrentTab()
 
     if (tabWidget->count() <= 1)
     {
-        if (!maybeSaveTab(idx)) return;
         auto *editor = currentEditor();
         if (editor)
         {
@@ -757,7 +747,6 @@ void EditorWindow::onTabCloseRequest(int index)
 {
     if (tabWidget->count() <= 1)
     {
-        if (!maybeSaveTab(index)) return;
         auto *editor = qobject_cast<CodeEditor*>(tabWidget->widget(index));
         if (editor)
         {

@@ -2,3 +2,5 @@
 
 build:
 	cmake --build build
+install:
+	./install.sh
