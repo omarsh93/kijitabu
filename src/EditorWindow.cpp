@@ -14,6 +14,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QFontDialog>
+#include <QTabBar>
 
 
 EditorWindow::EditorWindow()
@@ -21,6 +22,10 @@ EditorWindow::EditorWindow()
     tabWidget = new QTabWidget(this);
     tabWidget->setTabsClosable(true);
     tabWidget->setMovable(true);
+    tabWidget->tabBar()->setExpanding(false);
+    // タブバーの配置を左揃えにする
+    //tabWidget->setStyleSheet("QTabBar::tab-bar { alignment: left; }");
+
     setCentralWidget(tabWidget);
 
     connect(tabWidget, &QTabWidget::tabCloseRequested,
