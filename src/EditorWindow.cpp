@@ -211,7 +211,10 @@ void EditorWindow::restoreLastSession()
         settings.endArray();
 
         if (tabWidget->count() > 0)
-            tabWidget->setCurrentIndex(0);
+        {
+            int activeIdx = settings.value("activeTabIndex", 0).toInt();
+            tabWidget->setCurrentIndex(qMin(activeIdx, tabWidget->count() - 1));
+        }
     }
     else
     {
@@ -284,6 +287,7 @@ void EditorWindow::autoSaveAll()
     }
     settings.endArray();
     settings.setValue("tabCount", count);
+    settings.setValue("activeTabIndex", tabWidget->currentIndex());
 }
 
 void EditorWindow::createMenus()
